@@ -1,22 +1,65 @@
-# Qiskit-Portfolio
-Contains a simple Quantum Teleportation Circuit & a simple implementation of Grover's Algorithm using three qubits. 
+# Foundational Quantum Algorithms
 
-QuantumTeleportationCircuit.py:
-This program simulates a basic teleportation circuit utilizing two registers: one for the qubits and another for classical bits, each of length 3. Our target qubit for teleportation is initialized to some arbitrary unique state before teleportation, so to account for the fact that it is in some unknown state, we must first map it to a Bloch sphere to verify that our initial and final states are indicative of state teleportation. Afterwards we apply our teleportation circuit, which consists of a Bell state generator operated between qubits one and two followed by a Bell state analyzer operated on qubits 0 and 1. Then we measure qubits 0 and 1 and store them as classical bits in indices 0 and 1 respectively. Afterwards we apply our conditional gates based on our measurements and apply our X and Z gates as necessary before mapping our statevector to the Bloch sphere. Note: after teleporting our state, the state of qubit one will be random by the No-Cloning theorem. 
+Qiskit simulations of two introductory quantum algorithms: a three-qubit teleportation circuit and Grover search for the marked state `|101>`.
 
-Note: This program psuedo-randomly generates the initial state that will be teleported, so this is just one example of this program's output. 
+## Requirements
 
-Initial States:
-![ InitialStates ]( Assets/InitialStates.png )
-Final States:
-![ FinalStates   ]( Assets/FinalStates.png   )
+- Python 3
+- `qiskit`
+- `qiskit-aer`
+- `matplotlib`
+- `numpy`
 
-Physically, if we were implementing this circuit on trapped-ions with a hyperfine structure, our quantum register of length 3 would refer to 3 individual trapped ions contained in some electromagnetic field like a linear Paul trap. Our logical states |0> & |1> ( as displayed on the Bloch sphere ), refer to the hyperfine ground states located on our outter most valence electrons in our ions. Our rotation-based gates ( X, Y, Z gates ) would be implemented using optic lasers or a microwave pulse on the target ion in order to induce a Rabi oscillation such that the electron's probability amplitude is between the two logical states. Our CNOT gate makes use of the phonons of the ion chain to entangle the internal states of the two ions. Measurement is achieved using optic lasers; specifically, we use state-dependent fluorescence to excite only our logical one state, which would then decay, releasing photons ( i.e. light ) which we can detect. 
+Install with:
 
-SimpleGroversAlgorithm.py:
-This program demonstrates a simple implementation of Grover's algorithm using three qubits. We are only searching for one solution, specifically |101> state. Uses two functions: oracle & diffuser, both of which will be called repeatedly in a for loop such that our desired state's probability amplitude will be maximized. The oracle function marks the desired state, |101>, with a global phase change by way of a CCZ gate. The diffuser function is responsible for the amplification of our marked states' probability amplitude. It is important to note that these function's circuits change dependent on what our marked state is, as different states require different logic to apply the equivalent operations. The number of iterations we need to enact to achieve proper probability amplification of our marked state is dependent on the rounded value of the variable Iterations, which we use in a for loop to call the oracle and diffuser functions repeatedly. Finally, we use AerSimulator to simulate a compiled version of our circuit before displaying the final probability distribution graph across all of our possible states and number of counts per state.   
+```bash
+pip install qiskit qiskit-aer matplotlib numpy
+```
 
-Final probability distribution of our search algorithm. 
-Note: this is just one possible probability distribution; if you run this program a few times, probability distributions will vary slightly.  
+## Quantum teleportation
 
-![ GroversAlgorithmProbabilityDistribution ]( Assets/GroversAlgorithmProbabilityDistribution.png )
+Run:
+
+```bash
+python QuantumTeleportationCircuit.py
+```
+
+`QuantumTeleportationCircuit.py` uses a 3-qubit register and a 3-bit classical register.
+
+1. Qubit 0 is prepared in a random state with `ry`, `rz`, and `rx`.
+2. That initial state is plotted on the Bloch sphere for comparison.
+3. Qubits 1 and 2 are entangled into a Bell pair. A Bell measurement is then performed on qubits 0 and 1.
+4. Measurement outcomes on classical bits 0 and 1 control Bob’s corrections on qubit 2: **X** if bit 1 is 1, **Z** if bit 0 is 1 (matching the circuit).
+5. The final statevector is plotted. Qubit 2 should match the original state of qubit 0. Qubit 1 is random after teleportation, consistent with the no-cloning theorem.
+
+Each run uses a new random initial state, so the Bloch-sphere plots will differ.
+
+**Example initial states**
+
+![Initial states](Assets/InitialStates.png)
+
+**Example final states**
+
+![Final states](Assets/FinalStates.png)
+
+On trapped ions, the three qubits would be three ions in a trap (for example a linear Paul trap). Logical `|0>` and `|1>` are hyperfine ground states of the valence electrons. Single-qubit rotations are driven by lasers or microwaves (Rabi oscillation). The CNOT uses shared motion (phonons) of the ion chain. Measurement uses state-dependent fluorescence: the `|1>` state scatters photons that can be detected.
+
+## Grover’s algorithm
+
+Run:
+
+```bash
+python SimpleGroversAlgorithm.py
+```
+
+`SimpleGroversAlgorithm.py` searches a 3-qubit space for one marked state, `|101>`.
+
+- **Oracle:** phase-marks `|101>` using an `H`, a multi-controlled X (`ctrl_state='01'`), then `H` on the last qubit (equivalent to a controlled-controlled-Z on that basis state).
+- **Diffuser:** inversion about the mean, which amplifies the marked amplitude.
+- **Iterations:** `round(π / (4α))` with `α = arcsin(√(1/8))`, then the oracle and diffuser are applied that many times.
+
+The circuit is transpiled and run on `AerSimulator` with 1024 shots. Counts are printed and plotted. The `|101>` bin should dominate; shot noise means the histogram will vary slightly between runs.
+
+**Example probability distribution**
+
+![Grover probability distribution](Assets/GroversAlgorithmProbabilityDistribution.png)
